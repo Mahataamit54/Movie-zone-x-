@@ -87,14 +87,21 @@
     </style>
 </head>
 <body>
+<header>
 
-    <header>
-        <div class="logo">Moviezonex</div>
-        <div class="search-container">
-            <input type="text" id="search-input" placeholder="Search...">
-            <button class="search-btn" onclick="toggleSearch()"><i class="fas fa-search"></i></button>
-        </div>
-    </header>
+  <div class="logo" style="display:flex; align-items:center; gap:10px;">
+    <img src="logo.jpg" alt="Moviezonex Logo" style="height:45px; border-radius:8px;">
+    <span>Moviezonex</span>
+  </div>
+
+  <div class="search-container">
+    <input type="text" id="search-input" placeholder="Search...">
+    <button class="search-btn" onclick="toggleSearch()">
+      <i class="fas fa-search"></i>
+    </button>
+  </div>
+
+</header>
 
     <div id="main-view">
         <div class="carousel-scene"><div class="carousel" id="carousel"></div></div>
