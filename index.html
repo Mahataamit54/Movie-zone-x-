@@ -334,4 +334,113 @@
         }
 
         function initCarousel(list) {
-            const c = document.getElementById('carousel'); c.innerHTML = 
+            const c = document.getElementById('carousel'); c.innerHTML = '';
+            if(!list.length) return;
+            const theta = 360/list.length;
+            const rad = Math.round(150 / Math.tan(Math.PI/list.length));
+            list.forEach((m,i) => {
+                let finalPoster = m.poster ? m.poster : noImageFallback;
+                c.innerHTML += `<div class="carousel-item" onclick='openModal(${JSON.stringify(m).replace(/'/g, "&#39;")})' style="transform: rotateY(${theta*i}deg) translateZ(${rad+50}px)">
+                    <img src="${finalPoster}" onerror="this.onerror=null; this.src='${noImageFallback}';">
+                </div>`;
+            });
+            if (carouselInterval) clearInterval(carouselInterval);
+            carouselInterval = setInterval(() => { cIdx++; c.style.transform = `rotateY(${theta*cIdx*-1}deg)`; }, 3500);
+        }
+
+        function openModal(m, push = true) {
+            curMovie = m;
+            localStorage.setItem('lastMovieId', m.id);
+            if(push) window.history.pushState({modal:true}, null, "#movie");
+            if (carouselInterval) clearInterval(carouselInterval);
+
+            document.getElementById('m-title').innerText = m.title || 'Unknown Title';
+            document.getElementById('m-genre').innerText = m.genre || '';
+            
+            // NEW: SHOW DESCRIPTION
+            document.getElementById('m-desc').innerText = m.description || '';
+            
+            // NEW: SHOW SCREENSHOTS
+            const ssContainer = document.getElementById('m-screenshots');
+            ssContainer.innerHTML = '';
+            if(m.screenshots && m.screenshots.length > 0) {
+                m.screenshots.forEach(imgUrl => {
+                    ssContainer.innerHTML += `<img src="${imgUrl}" onerror="this.style.display='none'">`;
+                });
+            }
+
+            let finalPoster = m.poster ? m.poster : noImageFallback;
+            let heroImg = document.getElementById('hero-img');
+            heroImg.src = finalPoster;
+            heroImg.onerror = function() { this.src = noImageFallback; this.onerror = null; };
+            heroImg.style.display = 'block';
+            
+            document.getElementById('vid-box').style.display = 'none';
+            document.getElementById('iframe').src = "";
+            document.getElementById('dl-options').classList.remove('show');
+
+            document.getElementById('btn-play').onclick = () => {
+                if(!m.playUrl) return alert("No Stream Link Available");
+                let url = m.playUrl;
+                if(url.includes('youtu')) {
+                    const idMatch = url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/user\/\S+|\/ytscreeningroom\?v=))([\w\-]{10,12})\b/);
+                    if(idMatch) url = `https://www.youtube.com/embed/${idMatch[1]}?autoplay=1`;
+                }
+                document.getElementById('hero-img').style.display = 'none';
+                document.getElementById('vid-box').style.display = 'block';
+                document.getElementById('iframe').src = url;
+            };
+
+            document.getElementById('btn-dl').onclick = () => {
+                const sheet = document.getElementById('dl-options');
+                if(sheet.classList.contains('show')) { sheet.classList.remove('show'); return; }
+                let links = m.downloads || [];
+                if(!links.length && m.downloadUrl) links = [{name: 'Download Link', url: m.downloadUrl}];
+                if(links.length === 0) return alert("No download links available.");
+                let html = '<div class="dl-header">Select Quality</div>';
+                links.forEach(l => {
+                    html += `<a href="${l.url}" target="_blank" class="dl-item"><span>${l.name}</span> <span class="dl-badge">GET</span></a>`;
+                });
+                sheet.innerHTML = html;
+                sheet.classList.add('show');
+            };
+            checkFav();
+            document.getElementById('modal').classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('open');
+            document.getElementById('iframe').src = "";
+            localStorage.removeItem('lastMovieId');
+            if(window.location.hash === "#movie") window.history.back();
+            if(view === 'home') {
+                 // WAPAS AANE PAR BHI 18+ HIDE
+                 let cleanList = movies.filter(m => !(m.genre && m.genre.includes('18+')));
+                 if(cleanList.length > 0) initCarousel(cleanList.slice(0,5));
+            }
+        }
+
+        window.onpopstate = () => {
+            document.getElementById('modal').classList.remove('open');
+            document.getElementById('iframe').src = "";
+        };
+
+        function toggleFav() {
+            let favs = JSON.parse(localStorage.getItem('favs')) || [];
+            let idx = favs.findIndex(f => f.id === curMovie.id);
+            if(idx > -1) favs.splice(idx,1); else favs.push(curMovie);
+            localStorage.setItem('favs', JSON.stringify(favs));
+            checkFav();
+            if(view === 'fav') { currentList = favs; render(favs); }
+        }
+
+        function checkFav() {
+            let favs = JSON.parse(localStorage.getItem('favs')) || [];
+            let has = favs.some(f => f.id === curMovie.id);
+            let btn = document.getElementById('btn-list');
+            if(has) { btn.innerHTML = '<i class="fas fa-check"></i> Added'; btn.classList.add('added'); }
+            else { btn.innerHTML = '<i class="fas fa-plus"></i> My List'; btn.classList.remove('added'); }
+        }
+    </script>
+</body>
+</html>
